@@ -1,0 +1,76 @@
+#!/usr/bin/env bash
+# zrktex — LaTeX editor launcher
+# Usage:
+#   zrktex [file.tex]         GUI
+#   zrktex --tui [file.tex]   TUI (vim-like)
+#
+# Drop this file (and zrktex.py) anywhere on your PATH, e.g. /usr/local/bin/
+
+set -euo pipefail
+
+# ── Locate zrktex.py ──────────────────────────────────────────────────────────
+# Resolve the real path of this script so symlinks in /usr/bin still work.
+SELF="$(realpath "$0")"
+SELF_DIR="$(dirname "$SELF")"
+
+ZRKTEX_PY=""
+for candidate in \
+    "$SELF_DIR/zrktex.py" \
+    "$HOME/.local/share/zrktex/zrktex.py" \
+    "/usr/local/share/zrktex/zrktex.py" \
+    "/usr/share/zrktex/zrktex.py" \
+    "/opt/zrktex/zrktex.py"
+do
+    if [[ -f "$candidate" ]]; then
+        ZRKTEX_PY="$candidate"
+        break
+    fi
+done
+
+if [[ -z "$ZRKTEX_PY" ]]; then
+    echo "zrktex: cannot find zrktex.py" >&2
+    echo "" >&2
+    echo "Expected locations (checked in order):" >&2
+    echo "  $SELF_DIR/zrktex.py" >&2
+    echo "  $HOME/.local/share/zrktex/zrktex.py" >&2
+    echo "  /usr/local/share/zrktex/zrktex.py" >&2
+    echo "" >&2
+    echo "Run install.sh to set everything up automatically." >&2
+    exit 1
+fi
+
+# ── Python interpreter ────────────────────────────────────────────────────────
+PYTHON=""
+for py in python3 python; do
+    if command -v "$py" &>/dev/null && "$py" -c "import sys; assert sys.version_info >= (3,8)" 2>/dev/null; then
+        PYTHON="$py"
+        break
+    fi
+done
+
+if [[ -z "$PYTHON" ]]; then
+    echo "zrktex: Python 3.8+ not found. Install it first." >&2
+    exit 1
+fi
+
+# ── GUI mode: check tkinter is available ─────────────────────────────────────
+if [[ "$*" != *"--tui"* ]]; then
+    if ! "$PYTHON" -c "import tkinter" 2>/dev/null; then
+        echo "zrktex: tkinter not found — GUI mode unavailable." >&2
+        echo "" >&2
+        echo "Install tkinter:" >&2
+        if command -v apt-get &>/dev/null; then
+            echo "  sudo apt-get install python3-tk" >&2
+        elif command -v dnf &>/dev/null; then
+            echo "  sudo dnf install python3-tkinter" >&2
+        elif command -v pacman &>/dev/null; then
+            echo "  sudo pacman -S tk" >&2
+        fi
+        echo "" >&2
+        echo "Or launch in TUI mode:  zrktex --tui [file.tex]" >&2
+        exit 1
+    fi
+fi
+
+# ── Launch ────────────────────────────────────────────────────────────────────
+exec "$PYTHON" "$ZRKTEX_PY" "$@"
