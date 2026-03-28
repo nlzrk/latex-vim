@@ -1,301 +1,285 @@
 # zrktex
 
-A vim-like TUI text editor built specifically for LaTeX. Write your documents in a modal editor with syntax highlighting and command autocomplete, then compile straight to PDF without leaving the terminal.
+A LaTeX editor that runs in two modes from the same file: a **GUI** with a live PDF preview panel, and a **TUI** that works like Vim. Write your documents, embed `\plot` commands for inline graphs, and compile straight to PDF — no config required.
+
+---
+
+## Modes
+
+| | GUI | TUI |
+|---|---|---|
+| Launch | `python zrktex.py file.tex` | `python zrktex.py --tui file.tex` |
+| Interface | tkinter window, split editor + PDF panel | Terminal (curses), vim-like modal editing |
+| PDF preview | Live, rendered in the side panel | Opens with system viewer on `:wq` |
+| Best for | General use, exploring plots | SSH sessions, minimal environments |
 
 ---
 
 ## Features
 
-- **Modal editing** — Normal, Insert, Command, and Visual modes, just like Vim
-- **Vim keybindings** — movement, operators, text objects, registers, counts, and more
-- **LaTeX syntax highlighting** — commands, comments, math, and braces are all color-coded
-- **Command autocomplete** — type `\` and get a filtered popup of 200+ LaTeX commands navigable with Tab
-- **Auto-pairs** — `{`, `[`, `(`, and `$` automatically insert their closing counterpart
-- **Auto-indent** — Enter preserves indentation and adds a level after `\begin{...}` or `{`
-- **PDF compilation** — `:wq` saves, compiles with `pdflatex`, opens the PDF, and exits
-- **Live search** — `/pattern` updates match highlights as you type
-- **Undo / Redo** — full history with up to 300 snapshots
-- **Boilerplate template** — new `.tex` files open with a ready-to-use preamble
-- **Zero config** — single Python file, two pip packages
+- **`\plot` command** — embed any graph directly in your document: real functions, parametric curves, 3-D surfaces, complex domain colouring, vector fields. Plots are generated with matplotlib at compile time and included as PDF figures.
+- **GUI editor** — syntax-highlighted editor with line numbers, autocomplete popup, auto-pairs, auto-indent, split PDF preview, find dialog, and compile output panel
+- **TUI editor** — full vim keybindings (Normal / Insert / Command / Visual modes), live search, 300-level undo, autocomplete popup
+- **LaTeX autocomplete** — type `\` and get a filtered list of 200+ commands; navigate with Tab / arrows
+- **Auto-pairs** — `{`, `[`, `(`, `$` close themselves and position the cursor inside
+- **Smart indent** — Enter preserves indentation and adds a level after `\begin{...}` or `{`
+- **Compiler detection** — tries `pdflatex` → `latexmk` → `tectonic`, uses whatever is installed
+- **Boilerplate template** — new files open with a ready-to-use preamble
 
 ---
 
 ## Requirements
 
-**Python** 3.8 or newer.
-
-**Python packages:**
+**Python 3.8+**
 
 ```
-windows-curses   (Windows only)
+pip install -r requirements.txt
+```
+
+```
 pygments
+matplotlib
+numpy
+Pillow
+PyMuPDF
+windows-curses   # Windows only, for TUI
 ```
 
-**A LaTeX compiler** — one of:
+**tkinter** (GUI mode) — usually bundled with Python. On Linux you may need:
+
+```bash
+sudo apt-get install python3-tk      # Debian / Ubuntu
+sudo dnf install python3-tkinter     # Fedora
+sudo pacman -S tk                    # Arch
+```
+
+**A LaTeX compiler** — any one of:
 
 | Compiler | How to get it |
 |----------|---------------|
-| `pdflatex` | [MiKTeX](https://miktex.org/) (Windows) · [TeX Live](https://tug.org/texlive/) (all platforms) |
-| `latexmk` | Included with TeX Live · available via MiKTeX package manager |
+| `pdflatex` | [MiKTeX](https://miktex.org/) (Windows) · [TeX Live](https://tug.org/texlive/) (all) |
+| `latexmk` | Included with TeX Live |
 | `tectonic` | [tectonic-typesetting.io](https://tectonic-typesetting.io) |
-
-The editor tries `pdflatex` first, then `latexmk`, then `tectonic`. Any one of them is enough.
 
 ---
 
 ## Installation
 
-**1. Clone the repo**
+### Windows / macOS
 
 ```bash
 git clone https://github.com/nlzrk/zrktex
 cd zrktex
+pip install -r requirements.txt
+python zrktex.py
 ```
 
-**2. Install Python dependencies**
+### Linux — user install (no sudo)
 
 ```bash
-pip install -r requirements.txt
+git clone https://github.com/nlzrk/zrktex
+cd zrktex
+bash install.sh
 ```
 
-That's it. No build step, no config file.
+This installs `zrktex.py` to `~/.local/share/zrktex/`, drops a launcher at `~/.local/bin/zrktex`, and installs all Python dependencies. It also offers to add `~/.local/bin` to your PATH automatically.
+
+### Linux — system-wide install
+
+```bash
+sudo bash install.sh
+```
+
+Installs to `/usr/local/`. After this, `zrktex` works for all users.
+
+### Manual Linux launcher
+
+If you just want to drop two files into `/usr/local/bin/`:
+
+```bash
+sudo cp zrktex.py zrktex /usr/local/bin/
+sudo chmod +x /usr/local/bin/zrktex
+```
 
 ---
 
 ## Usage
 
 ```bash
-# Open an existing file
-python editor.py paper.tex
+zrktex file.tex           # GUI
+zrktex --tui file.tex     # TUI
+zrktex --tui              # TUI with no file (use :w <name> to save)
 
-# Create a new file (opens with boilerplate preamble)
-python editor.py new_document.tex
-```
-
-When you open a file that doesn't exist yet, the editor pre-fills it with a minimal LaTeX preamble and positions the cursor inside `\begin{document}` ready to write:
-
-```latex
-\documentclass[12pt]{article}
-\usepackage[utf8]{inputenc}
-\usepackage[T1]{fontenc}
-\usepackage{amsmath, amssymb}
-\usepackage{geometry}
-\usepackage{graphicx}
-\usepackage{hyperref}
-\geometry{margin=1in}
-
-\begin{document}
-← cursor starts here
-
-\end{document}
+# Without install.sh:
+python zrktex.py file.tex
+python zrktex.py --tui file.tex
 ```
 
 ---
 
-## Key Bindings
+## `\plot` command
 
-### Normal Mode
+Write `\plot` anywhere in your document. When you compile, each command is replaced with a properly-sized `\includegraphics` pointing to a matplotlib-generated PDF figure in `_zrkplots/`.
 
-#### Movement
+```latex
+% 2-D functions (comma-separate for multiple curves)
+\plot[xmin=-5, xmax=5, legend=sin;cos]{sin(x), cos(x)}
+
+% Parametric curve
+\plot[type=parametric, tmin=0, tmax=6.283]{cos(t), sin(t)}
+
+% 3-D surface
+\plot[type=3d, xmin=-3, xmax=3, ymin=-3, ymax=3]{sin(x)*cos(y)}
+
+% Complex domain colouring (hue = argument, brightness = modulus)
+\plot[type=complex, xmin=-2, xmax=2, ymin=-2, ymax=2]{z**2 - 1}
+
+% Vector field — quiver or streamlines
+\plot[type=vector, style=stream, xmin=-3, xmax=3, ymin=-3, ymax=3]{-y, x}
+
+% 3-D parametric curve
+\plot[type=curve3d, tmin=0, tmax=12.566]{cos(t), sin(t), t/4}
+```
+
+### Options
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `type` | `2d` | `2d` · `parametric` · `3d` · `complex` · `vector` · `curve3d` |
+| `xmin` / `xmax` | `-5` / `5` | x-axis bounds (supports `pi`, `e`) |
+| `ymin` / `ymax` | auto | y-axis bounds |
+| `zmin` / `zmax` | auto | z-axis bounds (3-D only) |
+| `tmin` / `tmax` | `0` / `2π` | parameter range for parametric types |
+| `title` | — | plot title |
+| `xlabel` / `ylabel` / `zlabel` | — | axis labels |
+| `legend` | — | semicolon-separated labels: `sin;cos` |
+| `figwidth` / `figheight` | `5.5` / `4.0` | figure size in inches |
+| `width` | `0.8\linewidth` | width passed to `\includegraphics` |
+| `resolution` | `80` / `500` | grid density for surfaces / complex plots |
+| `density` | `20` | arrow grid density for quiver |
+| `style` | `quiver` | `quiver` or `stream` (vector fields only) |
+
+### Available math functions
+
+```
+sin cos tan sec csc cot  sinh cosh tanh
+arcsin arccos arctan arctan2
+exp log log2 log10 ln sqrt abs sign floor ceil
+pi e inf  real imag re im conj angle arg
+np  (full numpy access, e.g. np.sinc(x))
+```
+
+For complex plots, `z` is the complex grid and `i` is the imaginary unit.
+
+---
+
+## GUI keybindings
+
+| Shortcut | Action |
+|----------|--------|
+| `Ctrl+S` | Save |
+| `Ctrl+Shift+S` | Save As |
+| `Ctrl+Z` / `Ctrl+Y` | Undo / Redo |
+| `Ctrl+F` | Find |
+| `F5` | Compile |
+| `F6` | Compile and open PDF externally |
+| `F7` | Toggle PDF preview panel |
+| `F8` | Toggle compile output panel |
+| `Ctrl+N` | New file |
+| `Ctrl+O` | Open file |
+| `Ctrl+Q` | Quit |
+
+---
+
+## TUI keybindings
+
+### Normal mode — movement
 
 | Key | Action |
 |-----|--------|
 | `h` `j` `k` `l` | Left · Down · Up · Right |
-| `w` | Forward one word |
-| `b` | Backward one word |
-| `e` | Forward to end of word |
-| `0` | Beginning of line |
-| `$` | End of line |
-| `^` | First non-blank character of line |
-| `gg` | First line of file |
-| `G` | Last line of file |
-| `Ctrl+D` | Half-page down |
-| `Ctrl+U` | Half-page up |
-| `PgDn` | Page down |
-| `PgUp` | Page up |
-| `{count}{motion}` | Repeat motion *count* times (e.g. `5j`, `3w`) |
+| `w` / `b` / `e` | Word forward / backward / end |
+| `0` / `$` / `^` | Line start / end / first non-blank |
+| `gg` / `G` | File start / end |
+| `Ctrl+D` / `Ctrl+U` | Half-page down / up |
+| `{n}{motion}` | Repeat motion n times (`5j`, `3w`, …) |
 
-#### Entering Insert Mode
+### Normal mode — editing
 
 | Key | Action |
 |-----|--------|
-| `i` | Insert before cursor |
-| `I` | Insert at first non-blank character of line |
-| `a` | Append after cursor |
-| `A` | Append at end of line |
-| `o` | Open new line below and insert |
-| `O` | Open new line above and insert |
-
-#### Editing (Normal Mode)
-
-| Key | Action |
-|-----|--------|
+| `i` / `I` | Insert before cursor / line start |
+| `a` / `A` | Append after cursor / line end |
+| `o` / `O` | New line below / above |
 | `x` | Delete character under cursor |
-| `D` | Delete from cursor to end of line |
-| `dd` | Delete current line |
-| `{n}dd` | Delete *n* lines |
-| `J` | Join current line with the next (adds a space) |
-| `yy` or `Y` | Yank (copy) current line |
-| `{n}yy` | Yank *n* lines |
-| `p` | Paste yanked content below / after cursor |
-| `P` | Paste yanked content above / before cursor |
-| `u` | Undo |
-| `Ctrl+R` | Redo |
+| `D` | Delete to end of line |
+| `dd` / `{n}dd` | Delete line(s) |
+| `yy` / `Y` | Yank line |
+| `p` / `P` | Paste below / above |
+| `J` | Join line with next |
+| `u` / `Ctrl+R` | Undo / Redo |
+| `/pattern` | Search (highlights update live) |
+| `n` / `N` | Next / previous match |
+| `v` | Visual line mode |
+| `:` | Command mode |
 
-#### Search
-
-| Key | Action |
-|-----|--------|
-| `/pattern` | Search forward (highlights update live as you type) |
-| `n` | Jump to next match |
-| `N` | Jump to previous match |
-
-Patterns are regular expressions. Use `\/` to search for a literal `/`.
-
-#### Other
+### Insert mode
 
 | Key | Action |
 |-----|--------|
-| `v` | Enter Visual mode |
-| `:` | Enter Command mode |
-
----
-
-### Insert Mode
-
-| Key | Action |
-|-----|--------|
-| `ESC` | Return to Normal mode |
-| `Tab` | Trigger autocomplete (if `\` prefix exists) or insert 4 spaces |
-| `Backspace` | Delete character to the left; join lines when at column 0 |
-| `Delete` | Delete character under cursor |
+| `Esc` | Back to Normal mode |
+| `Tab` | Autocomplete (if `\` prefix) or insert 4 spaces |
 | `Enter` | New line with auto-indent |
-| Arrow keys | Move cursor without leaving Insert mode |
-| `{` `[` `(` `$` | Insert character and its closing pair |
+| `{` `[` `(` `$` | Insert with closing pair |
 
-#### Autocomplete
-
-Autocomplete activates automatically while you type a `\command`. The popup shows up to 10 matching commands.
-
-| Key | Action |
-|-----|--------|
-| `Tab` or `↓` | Select next suggestion |
-| `↑` | Select previous suggestion |
-| `Enter` | Accept selected suggestion |
-| `ESC` | Dismiss popup |
-
-If no `\` prefix is present, `Tab` inserts four spaces instead.
-
----
-
-### Visual Mode
-
-Visual mode selects whole lines between the anchor point and the cursor.
-
-| Key | Action |
-|-----|--------|
-| `h` `j` `k` `l` | Extend selection |
-| `w` `b` | Extend selection by word |
-| `0` `$` `G` | Extend selection to line start / end / file end |
-| `d` or `x` | Delete selected lines (cut into register) |
-| `y` | Yank selected lines |
-| `v` or `ESC` | Cancel and return to Normal mode |
-
----
-
-### Command Mode
-
-Enter Command mode by pressing `:` in Normal mode.
+### Command mode
 
 | Command | Action |
 |---------|--------|
-| `:w` | Save the current file |
-| `:w <filename>` | Save to a different file |
-| `:q` | Quit (refused if there are unsaved changes) |
-| `:q!` | Force quit, discarding unsaved changes |
-| `:wq` or `:x` | Save → compile → open PDF → quit |
-| `:pdf` | Save and compile to PDF (stay in editor) |
-| `:e <filename>` | Open a different file |
+| `:w` | Save |
+| `:w <file>` | Save to different file |
+| `:q` | Quit (blocked if unsaved) |
+| `:q!` | Force quit |
+| `:wq` / `:x` | Save → compile → open PDF → quit |
+| `:pdf` | Save and compile (stay in editor) |
+| `:e <file>` | Open file |
 
 ---
 
-## PDF Compilation
+## Syntax highlighting
 
-`:wq` (and `:pdf`) run the following pipeline:
-
-1. Save the file
-2. Detect the available compiler (`pdflatex` → `latexmk` → `tectonic`)
-3. Run with `-interaction=nonstopmode` so compilation doesn't wait for input
-4. If successful, open the PDF with the system default viewer and exit
-5. If compilation fails, stay in the editor and show the first `!`-prefixed error line from the log on the status bar
-
-The `.log` file produced by the compiler is left on disk so you can inspect the full error output if needed.
-
----
-
-## Syntax Highlighting
-
-Colors are applied using [Pygments](https://pygments.org/) `TexLexer`. The color scheme:
-
-| Element | Color |
-|---------|-------|
-| `\commands` | Cyan |
-| `% comments` | Green |
-| `{braces}` / strings | Yellow |
-| Numbers | Magenta |
-| Operators / punctuation | Red |
-| Search matches | Black on Yellow |
-| Visual selection | Reversed |
-| Line numbers | Yellow (dimmed) |
+| Element | GUI color | TUI color |
+|---------|-----------|-----------|
+| `\commands` | Teal | Cyan |
+| `% comments` | Green | Green |
+| `{braces}` | Gold | Yellow |
+| `$math$` | Peach | — |
+| Numbers | Sage | Magenta |
+| Search matches | Green background | Yellow background |
 
 ---
 
-## Status Bar
-
-The bottom two rows of the terminal are reserved:
-
-```
- INSERT  paper.tex*                                          12:34
- E212: No file name — use :w <name>
-```
-
-- **Row 1** — current mode · filename (`*` if unsaved) · line:column
-- **Row 2** — command input (when in Command mode) or the most recent status/error message
-
----
-
-## Building a Standalone Executable
-
-### Nuitka (compiles to C, then to a native binary)
-
-```bash
-pip install nuitka
-python -m nuitka --onefile --include-package=pygments editor.py
-```
-
-Produces `editor.exe` on Windows or `editor` on Linux/macOS. No Python installation required to run it.
-
-> Requires a C compiler. On Windows, install [Visual Studio Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/) or MinGW.
-
-### PyInstaller (bundles Python runtime)
-
-```bash
-pip install pyinstaller
-pyinstaller --onefile editor.py
-# output → dist/editor.exe
-```
-
-Simpler than Nuitka but the resulting binary is larger since it packages the Python interpreter alongside the script.
-
----
-
-## Platform Notes
+## Platform notes
 
 | Platform | Notes |
 |----------|-------|
-| Windows | Requires `windows-curses` (`pip install windows-curses`). PDF opens with `os.startfile`. |
-| macOS | `curses` is in stdlib. PDF opens with `open`. |
-| Linux | `curses` is in stdlib. PDF opens with `xdg-open`. |
+| Windows | `windows-curses` required for TUI. GUI works out of the box. |
+| macOS | `curses` is in stdlib. GUI requires tkinter (bundled with python.org installer). |
+| Linux | Install `python3-tk` for GUI. `curses` is in stdlib. Use `install.sh` to set up a system command. |
+
+---
+
+## Building a standalone executable
+
+```bash
+# PyInstaller — bundles Python runtime
+pip install pyinstaller
+pyinstaller --onefile zrktex.py
+
+# Nuitka — compiles to native binary (smaller, faster startup)
+pip install nuitka
+python -m nuitka --onefile zrktex.py
+```
 
 ---
 
