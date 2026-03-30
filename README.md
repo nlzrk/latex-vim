@@ -1,4 +1,4 @@
-# zrktex
+# ZrkTeX
 
 A LaTeX editor that runs in two modes from the same file: a **GUI** with a live PDF preview, and a **TUI** that works like Vim. Write your documents, embed `\plot` commands for inline graphs, and compile straight to PDF — no config files, no setup beyond a LaTeX installation.
 
@@ -11,7 +11,7 @@ A LaTeX editor that runs in two modes from the same file: a **GUI** with a live 
 
 | | GUI | TUI |
 |---|---|---|
-| Launch | `python zrktex.py file.tex` | `python zrktex.py --tui file.tex` |
+| Launch | `python ZrkTeX.py file.tex` | `python ZrkTeX.py --tui file.tex` |
 | Interface | tkinter window, split editor + PDF panel | Terminal (curses), vim-like modal editing |
 | PDF preview | Live, rendered in the side panel | Opens with system viewer on `:wq` |
 | Best for | General use, exploring plots | SSH sessions, minimal environments |
@@ -73,21 +73,21 @@ sudo pacman -S tk                    # Arch
 ### Windows / macOS
 
 ```bash
-git clone https://github.com/nlzrk/zrktex
-cd zrktex
+git clone https://github.com/nlzrk/ZrkTeX
+cd ZrkTeX
 pip install -r requirements.txt
-python zrktex.py
+python ZrkTeX.py
 ```
 
 ### Linux — user install (no sudo)
 
 ```bash
-git clone https://github.com/nlzrk/zrktex
-cd zrktex
+git clone https://github.com/nlzrk/ZrkTeX
+cd ZrkTeX
 bash install.sh
 ```
 
-The script asks whether you want GUI, TUI, or both, installs the right dependencies, copies the files to `~/.local/share/zrktex/`, and drops a launcher at `~/.local/bin/zrktex`. It also offers to add `~/.local/bin` to your PATH.
+The script asks whether you want GUI, TUI, or both, installs the right dependencies, copies the files to `~/.local/share/ZrkTeX/`, and drops a launcher at `~/.local/bin/ZrkTeX`. It also offers to add `~/.local/bin` to your PATH.
 
 ### Linux — system-wide
 
@@ -100,8 +100,8 @@ Installs to `/usr/local/`. Works for all users after that.
 ### Manual
 
 ```bash
-sudo cp zrktex.py zrktex /usr/local/bin/
-sudo chmod +x /usr/local/bin/zrktex
+sudo cp ZrkTeX.py ZrkTeX /usr/local/bin/
+sudo chmod +x /usr/local/bin/ZrkTeX
 ```
 
 ---
@@ -109,13 +109,13 @@ sudo chmod +x /usr/local/bin/zrktex
 ## Usage
 
 ```bash
-zrktex file.tex           # GUI
-zrktex --tui file.tex     # TUI
-zrktex --tui              # TUI, no file (use :w <name> to save)
+ZrkTeX file.tex           # GUI
+ZrkTeX --tui file.tex     # TUI
+ZrkTeX --tui              # TUI, no file (use :w <name> to save)
 
 # Without install.sh:
-python zrktex.py file.tex
-python zrktex.py --tui file.tex
+python ZrkTeX.py file.tex
+python ZrkTeX.py --tui file.tex
 ```
 
 ---
@@ -289,11 +289,11 @@ For complex plots, `z` is the complex grid and `i` is the imaginary unit.
 ```bash
 # PyInstaller — bundles Python runtime
 pip install pyinstaller
-pyinstaller --onefile zrktex.py
+pyinstaller --onefile ZrkTeX.py
 
 # Nuitka — compiles to native binary (smaller, faster startup)
 pip install nuitka
-python -m nuitka --onefile zrktex.py
+python -m nuitka --onefile ZrkTeX.py
 ```
 
 ---
